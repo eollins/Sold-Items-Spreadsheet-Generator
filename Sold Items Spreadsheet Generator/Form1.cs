@@ -4,10 +4,9 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading;
+using System.Threading; 
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
@@ -16,6 +15,10 @@ namespace Sold_Items_Spreadsheet_Generator
 {
     public partial class Form1 : Form
     {
+        Dictionary<string, List<SpreadsheetItem>> itemsByYear = new Dictionary<string, List<SpreadsheetItem>>();
+        Dictionary<string, List<SpreadsheetItem>> itemsByQuality = new Dictionary<string, List<SpreadsheetItem>>();
+        Dictionary<string, List<SpreadsheetItem>> itemsByBoth = new Dictionary<string, List<SpreadsheetItem>>();
+
         List<SpreadsheetItem> items = new List<SpreadsheetItem>();
         public Form1()
         {
@@ -50,6 +53,11 @@ namespace Sold_Items_Spreadsheet_Generator
         {
             List<SpreadsheetItem> items = new List<SpreadsheetItem>();
             Begin.Enabled = false;
+            progressBar1.Value = 0;
+            progressBar2.Value = 0;
+            progressBar3.Value = 0;
+
+            textBox1.Text = "Grouping Items";
 
             if (fileType == ".xlsx")
             {
@@ -62,6 +70,85 @@ namespace Sold_Items_Spreadsheet_Generator
                 progressBar1.Maximum = lines.Length;
 
                 int count = 0;
+                foreach (string line in lines)
+                {
+                    if (count == 0)
+                    {
+                        count++;
+                        continue;
+                    }
+
+                    string[] components = line.Split(',');
+
+                    if (components.Length != 11)
+                    {
+                        if (components[4][0] == '"' && components[5][components[5].Length - 1] == '"')
+                        {
+                            string[] temp = components;
+                            components = new string[] { temp[0], temp[1], temp[2], temp[3], temp[4] + temp[5], temp[6], temp[7], temp[8], temp[9], temp[10], temp[11] + temp[12] };
+                        }
+                    }
+
+                    SpreadsheetItem item = new SpreadsheetItem(components[0], components[1], components[2], components[3], components[4], int.Parse(components[5]), components[6], components[7], components[8], components[9], components[10]);
+
+                    if (!itemsByYear.ContainsKey(item.Year))
+                    {
+                        itemsByYear.Add(item.Year, new List<SpreadsheetItem>());
+                    }
+
+                    itemsByYear[item.Year].Add(item);
+
+                    if (!itemsByQuality.ContainsKey(item.Quality))
+                    {
+                        itemsByQuality.Add(item.Quality, new List<SpreadsheetItem>());
+                    }
+
+                    if (!itemsByBoth.ContainsKey(item.Year + " " + item.Quality))
+                    {
+                        itemsByBoth.Add(item.Year + " " + item.Quality, new List<SpreadsheetItem>());
+                    }
+
+                    itemsByBoth[item.Year + " " + item.Quality].Add(item);
+
+                    progressBar1.Value++;
+                    label1.Text = progressBar1.Value + " items grouped";
+                }
+
+                int count1 = progressBar1.Value;
+
+                textBox1.Text = "Searching eBay Databases";
+
+                foreach (string category in itemsByBoth.Keys)
+                {
+                    //switch (category)
+                    //{
+                    //    case ""
+                    //}
+
+                    WebRequest request = WebRequest.Create("http://svcs.ebay.com/services/search/FindingService/v1?OPERATION-NAME=findCompletedItems&SERVICE-VERSION=1.7.0&SECURITY-APPNAME=GregoryM-mailer-PRD-a45ed6035-97c14545&RESPONSE-DATA-FORMAT=XML&REST-PAYLOAD&keywords=" + "" + "&categoryId=213&categoryId=214&categoryId=215&categoryId=216&categoryId=37795&listingType=Auction&paginationInput.entriesPerPage=200");
+                    WebResponse response = await request.GetResponseAsync();
+
+                    string xml = await new StreamReader(response.GetResponseStream()).ReadToEndAsync();
+                    XmlDocument doc = new XmlDocument();
+                    doc.LoadXml(xml);
+
+                    XmlNodeList nodes = ((XmlElement)((XmlElement)doc.GetElementsByTagName("findCompletedItemsResponse")[0]).GetElementsByTagName("searchResult")[0]).GetElementsByTagName("item");
+                        
+                        
+
+                    //parse through xml here and assign bits of xml to cards, calculate prices and update the dictionaries. at the end compile into spreadsheet.
+                }
+            }
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            selectType.SelectedIndex = 0;
+        }
+    }
+}
+
+/*int count = 0;
                 foreach (string item in lines)
                 {
                     if (count == 0)
@@ -263,34 +350,5 @@ namespace Sold_Items_Spreadsheet_Generator
                         progressBar1.Value++;
                         label1.Text = progressBar1.Value + " items added";
                         Log.SelectedIndex = Log.Items.Count - 1;
-                    }
-                }
-            }
-
-            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
-            {
-                string ext = Path.GetExtension(saveFileDialog1.FileName);
-                if (ext == ".csv")
-                {
-                    string data = "Year,Set,CardNumber,Quality,Player,Quantity,HighPrice,AvgPrice,LowPrice,Sport,Index\n";
-                    foreach (SpreadsheetItem item in items)
-                    {
-                        StringBuilder b = new StringBuilder(item.Player);
-                        b.Replace(',', ' ');
-                        item.Player = b.ToString();
-
-                        data += item.Year + "," + item.CardNumber + "," + item.Quality + "," + item.Player + "," + item.Quantity + "," + item.HighPrice + "," + item.AvgPrice + "," + item.LowPrice + "," + item.Sport + "," + item.Index + "\n";
-                    }
-
-                    File.WriteAllText(saveFileDialog1.FileName, data);
-                    Begin.Enabled = true;
-                }
-            }
-        }
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-            selectType.SelectedIndex = 0;
-        }
-    }
-}
+*/
+  
