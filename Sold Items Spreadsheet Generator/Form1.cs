@@ -92,12 +92,12 @@ namespace Sold_Items_Spreadsheet_Generator
 
                     SpreadsheetItem item = new SpreadsheetItem(components[0], components[1], components[2], components[3], components[4], int.Parse(components[5]), components[6], components[7], components[8], components[9], components[10]);
 
-                    if (!itemsByBoth.ContainsKey(item.Year + " " + item.Quality))
+                    if (!itemsByBoth.ContainsKey(item.Year))
                     {
-                        itemsByBoth.Add(item.Year + " " + item.Quality, new List<SpreadsheetItem>());
+                        itemsByBoth.Add(item.Year, new List<SpreadsheetItem>());
                     }
 
-                    itemsByBoth[item.Year + " " + item.Quality].Add(item);
+                    itemsByBoth[item.Year].Add(item);
                     names.Add(item.Player);
 
                     progressBar1.Value++;
@@ -108,7 +108,102 @@ namespace Sold_Items_Spreadsheet_Generator
 
                 textBox1.Text = "Searching eBay Databases";
 
+
                 List<SearchResult> itemsFound = new List<SearchResult>();
+                List<string> newNames = new List<string>();
+                int count2 = 0;
+                int total = 0;
+                foreach (string year in itemsByBoth.Keys)
+                {
+                    progressBar2.Maximum = names.Count;
+
+                    bool tobreak = false;
+
+                    int numberOfPages = 2;
+                    for (int i = 1; i < numberOfPages; i++)
+                    {
+                        WebRequest request = WebRequest.Create("http://svcs.ebay.com/services/search/FindingService/v1?OPERATION-NAME=findCompletedItems&SERVICE-VERSION=1.7.0&SECURITY-APPNAME=GregoryM-mailer-PRD-a45ed6035-97c14545&RESPONSE-DATA-FORMAT=XML&REST-PAYLOAD&keywords=" + year + "&categoryId=213&categoryId=214&categoryId=215&categoryId=216&categoryId=37795&itemFilter(0).name=Professional%20Grader&itemFilter(0).value=Professional%20Sports%20(PSA)&listingType=Auction&paginationInput.entriesPerPage=200&paginationInput.pageNumber=" + i);
+                        WebResponse response = await request.GetResponseAsync();
+
+                        string xml = await new StreamReader(response.GetResponseStream()).ReadToEndAsync();
+                        XmlDocument doc = new XmlDocument();
+                        doc.LoadXml(xml);
+
+                        numberOfPages = int.Parse(((XmlElement)((XmlElement)doc.GetElementsByTagName("findCompletedItemsResponse")[0]).GetElementsByTagName("paginationOutput")[0]).GetElementsByTagName("totalPages")[0].InnerText);
+
+                        XmlNodeList responseItems = ((XmlElement)((XmlElement)doc.GetElementsByTagName("findCompletedItemsResponse")[0]).GetElementsByTagName("searchResult")[0]).GetElementsByTagName("item");
+                        foreach (XmlElement el in responseItems)
+                        {
+                            SearchResult result = new SearchResult();
+                            result.Year = year;
+                            result.SoldPrice = decimal.Parse(((XmlElement)el.GetElementsByTagName("sellingStatus")[0]).GetElementsByTagName("convertedCurrentPrice")[0].InnerText);
+
+                            string title = el.GetElementsByTagName("title")[0].InnerText.ToLower();
+
+                            if (title.Contains("goudey sport kings"))
+                            {
+                                title.Replace("goudey sport kings", " ");
+                            }
+
+                            foreach (string player in names)
+                            {
+                                if (title.Contains(player.ToLower()))
+                                {
+                                    result.Player = player;
+                                    break;
+                                }
+                            }
+
+                            progressBar2.Value++;
+
+                            if (result.Player != null)
+                            {
+                                itemsFound.Add(result);
+                                count2++;
+                            }
+
+                            total++;
+                            newNames.Add(result.Player);
+                        }
+
+                        //MessageBox.Show(year + " " + count2 + "/" + total);
+                        count = 0;
+
+                        textBox1.Text = itemsFound.Count.ToString();
+                        //total = 0;
+                        if (itemsFound.Count >= 250)
+                        {
+                            tobreak = true;
+                        }
+                    }
+
+                    if (tobreak)
+                    {
+                        break;
+                    }
+                }
+
+                List<string> playersAlreadyVerified = new List<string>();
+                int numberOfPlayers = 0;
+                foreach (SearchResult result in itemsFound)
+                {
+                    if (!playersAlreadyVerified.Contains(result.Player))
+                    {
+                        playersAlreadyVerified.Add(result.Player);
+                        numberOfPlayers++;
+                    }
+                }
+
+
+
+                MessageBox.Show(numberOfPlayers.ToString() + " players from " + total + " results");
+
+
+
+
+
+
+                /*List<SearchResult> itemsFound = new List<SearchResult>();
                 foreach (string category in itemsByBoth.Keys)
                 {
                     progressBar2.Maximum = names.Count;
@@ -161,14 +256,14 @@ namespace Sold_Items_Spreadsheet_Generator
                                 MessageBox.Show("item found");
                             }
                         }
-                    }
+                    }*/
 
                     
                         
                         
 
                     //parse through xml here and assign bits of xml to cards, calculate prices and update the dictionaries. at the end compile into spreadsheet.
-                }
+                
             }
         }
 
