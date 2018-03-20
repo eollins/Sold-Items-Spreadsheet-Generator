@@ -110,151 +110,147 @@ namespace Sold_Items_Spreadsheet_Generator
 
 
                 Dictionary<string, List<SearchResult>> itemsFound = new Dictionary<string, List<SearchResult>>();
-                //int total = 0;
-                //int callsPlaced = 0;
-                //AddedLog.Items.Clear();
-                //bool toBreak = false;
-                //foreach (string group in itemsByBrandAndYear.Keys)
-                //{
-                //    if (toBreak)
-                //        break;
-
-                //    List<SearchResult> groupResults = new List<SearchResult>();
-                //    progressBar2.Maximum = itemsByBrandAndYear.Keys.Count;
-                //    int numberOfPages = 2;
-                //    int count32 = 0;
-                //    for (int i = 1; i < numberOfPages; i++)
-                //    {
-                //        DateTime start = DateTime.Now;
-                //        callsPlaced++;
-                //        string year;
-                //        string set;
-                //        if (group.Contains("-"))
-                //        {
-                //            year = group.Substring(0, 7);
-                //            set = group.Substring(7);
-                //        }
-                //        else
-                //        {
-                //            year = group.Substring(0, 4);
-                //            set = group.Substring(4);
-                //        }
-
-                //        XmlDocument doc = new XmlDocument();
-                //        try
-                //        {
-                //            WebRequest request = WebRequest.Create("http://svcs.ebay.com/services/search/FindingService/v1?OPERATION-NAME=findCompletedItems&SERVICE-VERSION=1.7.0&SECURITY-APPNAME=GregoryM-mailer-PRD-a45ed6035-97c14545&RESPONSE-DATA-FORMAT=XML&REST-PAYLOAD&keywords=" + (year + " " + set + " PSA") + "&categoryId=" + 213 + "&sortOrder=PricePlusShippingLowest&paginationInput.entriesPerPage=200&paginationInput.pageNumber=" + i);
-                //            WebResponse response = await request.GetResponseAsync();
-                //            string xml = await new StreamReader(response.GetResponseStream()).ReadToEndAsync();
-                //            doc.LoadXml(xml);
-                //        }
-                //        catch
-                //        {
-                //            AddedLog.Items.Add("Request failed. Retrying.");
-                //            try
-                //            {
-                //                WebRequest request = WebRequest.Create("http://svcs.ebay.com/services/search/FindingService/v1?OPERATION-NAME=findCompletedItems&SERVICE-VERSION=1.7.0&SECURITY-APPNAME=GregoryM-mailer-PRD-a45ed6035-97c14545&RESPONSE-DATA-FORMAT=XML&REST-PAYLOAD&keywords=" + (year + " " + set + " PSA") + "&categoryId=" + 213 + "&sortOrder=PricePlusShippingLowest&paginationInput.entriesPerPage=200&paginationInput.pageNumber=" + i);
-                //                WebResponse response = await request.GetResponseAsync();
-                //                string xml = await new StreamReader(response.GetResponseStream()).ReadToEndAsync();
-                //                doc.LoadXml(xml);
-                //            }
-                //            catch
-                //            {
-                //                AddedLog.Items.Add("Skipped call due to internal server error.");
-                //                continue;
-                //            }
-                //        }
-
-                //        numberOfPages = int.Parse(((XmlElement)((XmlElement)doc.GetElementsByTagName("findCompletedItemsResponse")[0]).GetElementsByTagName("paginationOutput")[0]).GetElementsByTagName("totalPages")[0].InnerText);
-
-                //        XmlNodeList nodes = ((XmlElement)((XmlElement)doc.GetElementsByTagName("findCompletedItemsResponse")[0]).GetElementsByTagName("searchResult")[0]).GetElementsByTagName("item");
-
-                //        foreach (XmlElement ele in nodes)
-                //        {
-                //            if (toBreak)
-                //                break;
-
-                //            SearchResult result = new SearchResult("", 0, "", "");
-
-                //            DateTime s = DateTime.Now;
-                //            bool found = false;
-                //            string player = "";
-                //            string title = ele.GetElementsByTagName("title")[0].InnerText.ToLower();
-                //            foreach (string name in names)
-                //            {
-                //                if (title.Contains(name.ToLower()))
-                //                {
-                //                    found = true;
-                //                    player = name;
-                //                    break;
-                //                }
-                //            }
-                //            //MessageBox.Show((DateTime.Now - s).TotalSeconds.ToString());
-
-                //            count32++;
-                //            //MessageBox.Show((start - DateTime.Now).TotalSeconds.ToString());
-                //            if (found)
-                //            {
-                //                result.Player = player;
-                //                result.SoldPrice = decimal.Parse(((XmlElement)doc.GetElementsByTagName("sellingStatus")[0]).GetElementsByTagName("currentPrice")[0].InnerText);
-                //                result.Year = year;
-                //                result.Set = set;
-                //                total++;
-
-                //                groupResults.Add(result);
-                //                AddedLog.Items.Add("Added " + player + ", " + total + ", " + count32);
-                //                label1.Text = total + " items added out of " + count32 + " results";
-                //                AddedLog.SelectedIndex = AddedLog.Items.Count - 1;
-
-                //                if (total > 250)
-                //                {
-                //                    toBreak = true;
-                //                }
-                //            }
-                //            else
-                //            {
-                //                Debug.WriteLine("Skipped over " + ele.GetElementsByTagName("title")[0].InnerText.ToLower() + ", " + count32);
-                //                continue;
-                //            }
-                //        }
-                //    }
-
-                //    progressBar2.Maximum = itemsByBrandAndYear.Keys.Count;
-                //    progressBar2.Value++;
-
-                //    itemsFound.Add(group, groupResults);
-                //}
-
-                XmlDocument m = new XmlDocument();
-                m.Load(@"SampleData.xml");
-                XmlNodeList nodes2 = ((XmlElement)m.GetElementsByTagName("ListingData")[0]).GetElementsByTagName("Listing");
                 int total = 0;
-                foreach (XmlElement ex in nodes2)
+                int callsPlaced = 0;
+                AddedLog.Items.Clear();
+                bool toBreak = false;
+                foreach (string group in itemsByBrandAndYear.Keys)
                 {
-                    SearchResult result = new SearchResult("", 0, "", "");
-                    result.Year = ex.GetElementsByTagName("Year")[0].InnerText;
-                    result.Set = ex.GetElementsByTagName("Set")[0].InnerText;
-                    result.Player = ex.GetElementsByTagName("Player")[0].InnerText;
-                    result.SoldPrice = decimal.Parse(ex.GetElementsByTagName("SoldPrice")[0].InnerText);
+                    if (toBreak)
+                        break;
 
-                    if (!itemsFound.ContainsKey(result.Year + result.Set))
+                    List<SearchResult> groupResults = new List<SearchResult>();
+                    progressBar2.Maximum = itemsByBrandAndYear.Keys.Count;
+                    int numberOfPages = 2;
+                    int count32 = 0;
+                    for (int i = 1; i < numberOfPages; i++)
                     {
-                        itemsFound.Add(result.Year + result.Set, new List<SearchResult>());
+                        DateTime start = DateTime.Now;
+                        callsPlaced++;
+                        string year;
+                        string set;
+                        if (group.Contains("-"))
+                        {
+                            year = group.Substring(0, 7);
+                            set = group.Substring(7);
+                        }
+                        else
+                        {
+                            year = group.Substring(0, 4);
+                            set = group.Substring(4);
+                        }
+
+                        XmlDocument doc = new XmlDocument();
+                        try
+                        {
+                            WebRequest request = WebRequest.Create("http://svcs.ebay.com/services/search/FindingService/v1?OPERATION-NAME=findCompletedItems&SERVICE-VERSION=1.7.0&SECURITY-APPNAME=GregoryM-mailer-PRD-a45ed6035-97c14545&RESPONSE-DATA-FORMAT=XML&REST-PAYLOAD&keywords=" + (year + " " + set + " PSA") + "&categoryId=" + 213 + "&sortOrder=PricePlusShippingLowest&paginationInput.entriesPerPage=200&paginationInput.pageNumber=" + i);
+                            WebResponse response = await request.GetResponseAsync();
+                            string xml = await new StreamReader(response.GetResponseStream()).ReadToEndAsync();
+                            doc.LoadXml(xml);
+                        }
+                        catch
+                        {
+                            AddedLog.Items.Add("Request failed. Retrying.");
+                            try
+                            {
+                                WebRequest request = WebRequest.Create("http://svcs.ebay.com/services/search/FindingService/v1?OPERATION-NAME=findCompletedItems&SERVICE-VERSION=1.7.0&SECURITY-APPNAME=GregoryM-mailer-PRD-a45ed6035-97c14545&RESPONSE-DATA-FORMAT=XML&REST-PAYLOAD&keywords=" + (year + " " + set + " PSA") + "&categoryId=" + 213 + "&sortOrder=PricePlusShippingLowest&paginationInput.entriesPerPage=200&paginationInput.pageNumber=" + i);
+                                WebResponse response = await request.GetResponseAsync();
+                                string xml = await new StreamReader(response.GetResponseStream()).ReadToEndAsync();
+                                doc.LoadXml(xml);
+                            }
+                            catch
+                            {
+                                AddedLog.Items.Add("Skipped call due to internal server error.");
+                                continue;
+                            }
+                        }
+
+                        numberOfPages = int.Parse(((XmlElement)((XmlElement)doc.GetElementsByTagName("findCompletedItemsResponse")[0]).GetElementsByTagName("paginationOutput")[0]).GetElementsByTagName("totalPages")[0].InnerText);
+
+                        XmlNodeList nodes = ((XmlElement)((XmlElement)doc.GetElementsByTagName("findCompletedItemsResponse")[0]).GetElementsByTagName("searchResult")[0]).GetElementsByTagName("item");
+
+                        foreach (XmlElement ele in nodes)
+                        {
+                            if (toBreak)
+                                break;
+
+                            SearchResult result = new SearchResult("", 0, "", "");
+
+                            DateTime s = DateTime.Now;
+                            bool found = false;
+                            string player = "";
+                            string title = ele.GetElementsByTagName("title")[0].InnerText.ToLower();
+                            foreach (string name in names)
+                            {
+                                if (title.Contains(name.ToLower()))
+                                {
+                                    found = true;
+                                    player = name;
+                                    break;
+                                }
+                            }
+                            //MessageBox.Show((DateTime.Now - s).TotalSeconds.ToString());
+
+                            count32++;
+                            //MessageBox.Show((start - DateTime.Now).TotalSeconds.ToString());
+                            if (found)
+                            {
+                                result.Player = player;
+                                result.SoldPrice = decimal.Parse(((XmlElement)doc.GetElementsByTagName("sellingStatus")[0]).GetElementsByTagName("currentPrice")[0].InnerText);
+                                result.Year = year;
+                                result.Set = set;
+                                total++;
+
+                                groupResults.Add(result);
+                                AddedLog.Items.Add("Added " + player + ", " + total + ", " + count32);
+                                label1.Text = total + " items added out of " + count32 + " results";
+                                AddedLog.SelectedIndex = AddedLog.Items.Count - 1;
+
+                                if (total > 100)
+                                {
+                                    toBreak = true;
+                                }
+                            }
+                            else
+                            {
+                                Debug.WriteLine("Skipped over " + ele.GetElementsByTagName("title")[0].InnerText.ToLower() + ", " + count32);
+                                continue;
+                            }
+                        }
                     }
 
-                    itemsFound[result.Year + result.Set].Add(result);
-                    total++;
+                    progressBar2.Maximum = itemsByBrandAndYear.Keys.Count;
+                    progressBar2.Value++;
+
+                    itemsFound.Add(group, groupResults);
                 }
 
-                List<XmlDocument> docs = new List<XmlDocument>();
-                bool complete = false;
+                //XmlDocument m = new XmlDocument();
+                //m.Load(@"SampleData.xml");
+                //XmlNodeList nodes2 = ((XmlElement)m.GetElementsByTagName("ListingData")[0]).GetElementsByTagName("Listing");
+                //int total = 0;
+                //foreach (XmlElement ex in nodes2)
+                //{
+                //    SearchResult result = new SearchResult("", 0, "", "");
+                //    result.Year = ex.GetElementsByTagName("Year")[0].InnerText;
+                //    result.Set = ex.GetElementsByTagName("Set")[0].InnerText;
+                //    result.Player = ex.GetElementsByTagName("Player")[0].InnerText;
+                //    result.SoldPrice = decimal.Parse(ex.GetElementsByTagName("SoldPrice")[0].InnerText);
+
+                //    if (!itemsFound.ContainsKey(result.Year + result.Set))
+                //    {
+                //        itemsFound.Add(result.Year + result.Set, new List<SearchResult>());
+                //    }
+
+                //    itemsFound[result.Year + result.Set].Add(result);
+                //    total++;
+                //}
 
                 XmlDocument doc2 = new XmlDocument();
                 doc2.AppendChild(doc2.CreateElement("ListingData"));
                 int count2 = 0;
 
                 progressBar3.Maximum = total;
-                bool toBreak2 = false;
                 foreach (string group in itemsFound.Keys)
                 {
                     foreach (SearchResult result in itemsFound[group])
@@ -271,48 +267,18 @@ namespace Sold_Items_Spreadsheet_Generator
                         doc2.GetElementsByTagName("ListingData")[0].AppendChild(el);
                         count2++;
                         progressBar3.Value++;
-                        label1.Text = count2 + " items prepared for database";
+                        label1.Text = count2 + " items compiled into data sheet";
                         
                         Debug.WriteLine(new ASCIIEncoding().GetByteCount(doc2.InnerXml) + ", " + group);
-                        if (new ASCIIEncoding().GetByteCount(doc2.InnerXml) > 4194000 || count2 >= total)
-                        {
-                            XmlDocument final = new XmlDocument();
-                            final.LoadXml(doc2.InnerXml);
-                            docs.Add(final);
-                            doc2.InnerXml = "<ListingData></ListingData>";
-
-                            if (count2 >= total)
-                            {
-                                toBreak2 = true;
-                                break;
-                            }
-                        }
                     }
-
-                    if (toBreak2)
-                        break;
                 }
 
-                int t = 0;
-                foreach (XmlDocument doc in docs)
+                if (saveXML.ShowDialog() == DialogResult.OK)
                 {
-                    WebRequest request2 = WebRequest.Create("http://gmcconsignmentapi.azurewebsites.net/api/SaleData/PopulateDatabase");
-                    request2.Method = "POST";
-                    request2.ContentType = "application/xml";
-                    byte[] bytes = new ASCIIEncoding().GetBytes(doc.InnerXml);
-                    Stream stream = await request2.GetRequestStreamAsync();
-                    await stream.WriteAsync(bytes, 0, doc.InnerXml.Length);
-                    label1.Text = "Adding items to database";
-                    WebResponse response2 = await request2.GetResponseAsync();
-                    string responseBody = await new StreamReader(response2.GetResponseStream()).ReadToEndAsync();
-                    responseBody = responseBody.Substring(5);
-                    responseBody = responseBody.Substring(0, responseBody.IndexOf('<'));
-                    int count3 = int.Parse(responseBody);
-                    t += count3;
-                    label1.Text = t + " items published";
+                    File.Create(saveXML.FileName).Close();
+                    doc2.Save(saveXML.FileName);
+                    MessageBox.Show("Saved.");
                 }
-
-                MessageBox.Show(t + " items added to the database out of " + count2 + " requested.");
 
                 Application.Exit();
             }

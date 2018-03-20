@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.Begin = new System.Windows.Forms.Button();
-            this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
+            this.saveXML = new System.Windows.Forms.SaveFileDialog();
             this.openSpreadsheet = new System.Windows.Forms.OpenFileDialog();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.label1 = new System.Windows.Forms.Label();
@@ -48,6 +48,10 @@
             this.Begin.Text = "Begin";
             this.Begin.UseVisualStyleBackColor = true;
             this.Begin.Click += new System.EventHandler(this.Begin_Click);
+            // 
+            // saveXML
+            // 
+            this.saveXML.Filter = "XML files|*.xml";
             // 
             // openSpreadsheet
             // 
@@ -126,7 +130,7 @@
 
         #endregion
         private System.Windows.Forms.Button Begin;
-        private System.Windows.Forms.SaveFileDialog saveFileDialog1;
+        private System.Windows.Forms.SaveFileDialog saveXML;
         private System.Windows.Forms.OpenFileDialog openSpreadsheet;
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Label label1;
