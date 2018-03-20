@@ -1,9 +1,0 @@
-C:\Users\ethan\Documents\Sold Items Spreadsheet Generator\Sold Items Spreadsheet Generator\obj\Debug\Sold Items Spreadsheet Generator.csprojResolveAssemblyReference.cache
-C:\Users\ethan\Documents\Sold Items Spreadsheet Generator\Sold Items Spreadsheet Generator\obj\Debug\Sold_Items_Spreadsheet_Generator.Form1.resources
-C:\Users\ethan\Documents\Sold Items Spreadsheet Generator\Sold Items Spreadsheet Generator\obj\Debug\Sold_Items_Spreadsheet_Generator.Properties.Resources.resources
-C:\Users\ethan\Documents\Sold Items Spreadsheet Generator\Sold Items Spreadsheet Generator\obj\Debug\Sold Items Spreadsheet Generator.csproj.GenerateResource.Cache
-C:\Users\ethan\Documents\Sold Items Spreadsheet Generator\Sold Items Spreadsheet Generator\bin\Debug\Sold Items Spreadsheet Generator.exe.config
-C:\Users\ethan\Documents\Sold Items Spreadsheet Generator\Sold Items Spreadsheet Generator\bin\Debug\Sold Items Spreadsheet Generator.exe
-C:\Users\ethan\Documents\Sold Items Spreadsheet Generator\Sold Items Spreadsheet Generator\bin\Debug\Sold Items Spreadsheet Generator.pdb
-C:\Users\ethan\Documents\Sold Items Spreadsheet Generator\Sold Items Spreadsheet Generator\obj\Debug\Sold Items Spreadsheet Generator.exe
-C:\Users\ethan\Documents\Sold Items Spreadsheet Generator\Sold Items Spreadsheet Generator\obj\Debug\Sold Items Spreadsheet Generator.pdb
