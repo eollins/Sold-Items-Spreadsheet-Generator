@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -55,7 +56,6 @@ namespace Sold_Items_Spreadsheet_Generator
             Begin.Enabled = false;
             progressBar1.Value = 0;
             progressBar2.Value = 0;
-            progressBar3.Value = 0;
 
             textBox1.Text = "Grouping Items";
 
@@ -114,6 +114,9 @@ namespace Sold_Items_Spreadsheet_Generator
                 int callsPlaced = 0;
                 AddedLog.Items.Clear();
                 bool toBreak = false;
+                int listingId = 1;
+                DatabaseLog.Items.Clear();
+                List<string> groups = new List<string>();
                 foreach (string group in itemsByBrandAndYear.Keys)
                 {
                     if (toBreak)
@@ -206,10 +209,10 @@ namespace Sold_Items_Spreadsheet_Generator
                                 label1.Text = total + " items added out of " + count32 + " results";
                                 AddedLog.SelectedIndex = AddedLog.Items.Count - 1;
 
-                                if (total > 100)
-                                {
-                                    toBreak = true;
-                                }
+                                //if (total > 250)
+                                //{
+                                //    toBreak = true;
+                                //}
                             }
                             else
                             {
@@ -220,65 +223,77 @@ namespace Sold_Items_Spreadsheet_Generator
                     }
 
                     progressBar2.Maximum = itemsByBrandAndYear.Keys.Count;
-                    progressBar2.Value++;
 
                     itemsFound.Add(group, groupResults);
-                }
+                    label1.Text = "Importing group \"" + group + "\" into database";
 
-                //XmlDocument m = new XmlDocument();
-                //m.Load(@"SampleData.xml");
-                //XmlNodeList nodes2 = ((XmlElement)m.GetElementsByTagName("ListingData")[0]).GetElementsByTagName("Listing");
-                //int total = 0;
-                //foreach (XmlElement ex in nodes2)
-                //{
-                //    SearchResult result = new SearchResult("", 0, "", "");
-                //    result.Year = ex.GetElementsByTagName("Year")[0].InnerText;
-                //    result.Set = ex.GetElementsByTagName("Set")[0].InnerText;
-                //    result.Player = ex.GetElementsByTagName("Player")[0].InnerText;
-                //    result.SoldPrice = decimal.Parse(ex.GetElementsByTagName("SoldPrice")[0].InnerText);
+                    SqlConnection connection = new SqlConnection(Connection.ConnectionString);
+                    SqlCommand command = new SqlCommand("usp_clearListings");
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Connection = connection;
+                    connection.Open();
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    DataTable table = new DataTable();
+                    //adapter.Fill(table);
 
-                //    if (!itemsFound.ContainsKey(result.Year + result.Set))
-                //    {
-                //        itemsFound.Add(result.Year + result.Set, new List<SearchResult>());
-                //    }
+                    SqlCommand addCommand = new SqlCommand("usp_addListing");
+                    addCommand.CommandType = CommandType.StoredProcedure;
+                    addCommand.Connection = connection;
+                    int succeeded1 = 0;
+                    int attempts = 0;
 
-                //    itemsFound[result.Year + result.Set].Add(result);
-                //    total++;
-                //}
-
-                XmlDocument doc2 = new XmlDocument();
-                doc2.AppendChild(doc2.CreateElement("ListingData"));
-                int count2 = 0;
-
-                progressBar3.Maximum = total;
-                foreach (string group in itemsFound.Keys)
-                {
-                    foreach (SearchResult result in itemsFound[group])
+                    foreach (SearchResult result in groupResults)
                     {
-                        XmlElement el = doc2.CreateElement("Listing");
-                        el.AppendChild(doc2.CreateElement("Year"));
-                        el.AppendChild(doc2.CreateElement("Player"));
-                        el.AppendChild(doc2.CreateElement("Set"));
-                        el.AppendChild(doc2.CreateElement("SoldPrice"));
-                        el.GetElementsByTagName("Year")[0].InnerText = result.Year;
-                        el.GetElementsByTagName("Player")[0].InnerText = result.Player;
-                        el.GetElementsByTagName("Set")[0].InnerText = result.Set;
-                        el.GetElementsByTagName("SoldPrice")[0].InnerText = result.SoldPrice.ToString();
-                        doc2.GetElementsByTagName("ListingData")[0].AppendChild(el);
-                        count2++;
-                        progressBar3.Value++;
-                        label1.Text = count2 + " items compiled into data sheet";
-                        
-                        Debug.WriteLine(new ASCIIEncoding().GetByteCount(doc2.InnerXml) + ", " + group);
+                        addCommand.Parameters.Add(new SqlParameter("@Year", result.Year));
+                        addCommand.Parameters.Add(new SqlParameter("@Player", result.Player));
+                        addCommand.Parameters.Add(new SqlParameter("@Set", result.Set));
+                        addCommand.Parameters.Add(new SqlParameter("@SoldPrice", result.SoldPrice));
+                        addCommand.Parameters.Add(new SqlParameter("@ListingID", listingId));
+                        listingId++;
+
+                        SqlDataAdapter adapter2 = new SqlDataAdapter(addCommand);
+                        DataTable table2 = new DataTable();
+
+                        try
+                        {
+                            adapter2.Fill(table2);
+                        }
+                        catch
+                        {
+                            attempts++;
+                            Debug.WriteLine(succeeded1 + " / " + attempts + " / " + (attempts - succeeded1) + " / " + groupResults.Count);
+                            //progressBar1.Value++;
+                            continue;
+                        }
+
+                        addCommand.Parameters.Clear();
+
+                        attempts++;
+
+                        if (table2.Rows.Count != 0)
+                        {
+                            succeeded1++;
+                        }
+
+                        //DatabaseLog.Items[DatabaseLog.Items.Count - 1] = "Imported " + attempts + "/" + succeeded1 + " items to database";
+                        Debug.WriteLine(succeeded1 + " / " + attempts + " / " + (attempts - succeeded1) + " / " + groupResults.Count);
                     }
+
+                    label1.Text = "Search eBay Databases";
+                    DatabaseLog.Items.Add("Added " + succeeded1 + " out of " + attempts + " items in group " + group);
+                    DatabaseLog.SelectedIndex = DatabaseLog.Items.Count - 1;
+                    groups.Add(succeeded1 + ":" + attempts + ":" + group);
                 }
 
-                if (saveXML.ShowDialog() == DialogResult.OK)
+                int succeeded = 0;
+                int total3 = 0;
+                foreach (string s in groups)
                 {
-                    File.Create(saveXML.FileName).Close();
-                    doc2.Save(saveXML.FileName);
-                    MessageBox.Show("Saved.");
+                    string[] s2 = s.Split(':');
+                    succeeded += int.Parse(s2[0]);
+                    total3 += int.Parse(s2[1]);
                 }
+                MessageBox.Show("Out of " + total3 + " items, " + succeeded + " were sent to the database. Completed with " + callsPlaced + "calls.");
 
                 Application.Exit();
             }
