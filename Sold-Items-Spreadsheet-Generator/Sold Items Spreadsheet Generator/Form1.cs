@@ -146,7 +146,7 @@ namespace Sold_Items_Spreadsheet_Generator
                         XmlDocument doc = new XmlDocument();
                         try
                         {
-                            WebRequest request = WebRequest.Create("http://svcs.ebay.com/services/search/FindingService/v1?OPERATION-NAME=findCompletedItems&SERVICE-VERSION=1.7.0&SECURITY-APPNAME=GregoryM-mailer-PRD-a45ed6035-97c14545&RESPONSE-DATA-FORMAT=XML&REST-PAYLOAD&keywords=" + (year + " " + set + " PSA") + "&categoryId=" + 213 + "&sortOrder=PricePlusShippingLowest&paginationInput.entriesPerPage=200&paginationInput.pageNumber=" + i);
+                            WebRequest request = WebRequest.Create("http://svcs.ebay.com/services/search/FindingService/v1?OPERATION-NAME=findCompletedItems&SERVICE-VERSION=1.7.0&SECURITY-APPNAME=GregoryM-mailer-PRD-a45ed6035-97c14545&RESPONSE-DATA-FORMAT=XML&REST-PAYLOAD&listingType=Auction&keywords=" + (year + " " + set + " PSA") + "&categoryId=" + 213 + "&sortOrder=PricePlusShippingLowest&paginationInput.entriesPerPage=200&paginationInput.pageNumber=" + i);
                             WebResponse response = await request.GetResponseAsync();
                             string xml = await new StreamReader(response.GetResponseStream()).ReadToEndAsync();
                             doc.LoadXml(xml);
@@ -156,7 +156,7 @@ namespace Sold_Items_Spreadsheet_Generator
                             AddedLog.Items.Add("Request failed. Retrying.");
                             try
                             {
-                                WebRequest request = WebRequest.Create("http://svcs.ebay.com/services/search/FindingService/v1?OPERATION-NAME=findCompletedItems&SERVICE-VERSION=1.7.0&SECURITY-APPNAME=GregoryM-mailer-PRD-a45ed6035-97c14545&RESPONSE-DATA-FORMAT=XML&REST-PAYLOAD&keywords=" + (year + " " + set + " PSA") + "&categoryId=" + 213 + "&sortOrder=PricePlusShippingLowest&paginationInput.entriesPerPage=200&paginationInput.pageNumber=" + i);
+                                WebRequest request = WebRequest.Create("http://svcs.ebay.com/services/search/FindingService/v1?OPERATION-NAME=findCompletedItems&SERVICE-VERSION=1.7.0&SECURITY-APPNAME=GregoryM-mailer-PRD-a45ed6035-97c14545&RESPONSE-DATA-FORMAT=XML&REST-PAYLOAD&listingType=Auction&keywords=" + (year + " " + set + " PSA") + "&categoryId=" + 213 + "&sortOrder=PricePlusShippingLowest&paginationInput.entriesPerPage=200&paginationInput.pageNumber=" + i);
                                 WebResponse response = await request.GetResponseAsync();
                                 string xml = await new StreamReader(response.GetResponseStream()).ReadToEndAsync();
                                 doc.LoadXml(xml);
@@ -177,7 +177,7 @@ namespace Sold_Items_Spreadsheet_Generator
                             if (toBreak)
                                 break;
 
-                            SearchResult result = new SearchResult("", 0, "", "");
+                            SearchResult result = new SearchResult();
 
                             DateTime s = DateTime.Now;
                             bool found = false;
@@ -192,6 +192,66 @@ namespace Sold_Items_Spreadsheet_Generator
                                     break;
                                 }
                             }
+
+                            double grade = 0;
+                            string[] words = title.Split(' ');
+                            int level = 0;
+                            foreach (string str in words)
+                            {
+                                if (str == "psa")
+                                {
+                                    level++;
+                                    continue;
+                                }
+
+                                if (level == 1)
+                                {
+                                    try
+                                    {
+                                        grade = double.Parse(str);
+                                    }
+                                    catch
+                                    {
+                                        grade = -1;
+                                    }
+
+                                    level++;
+                                }
+
+                                if (level == 2)
+                                {
+                                    if (str == "OC" || str == "MC" || str == "ST" || str == "MK")
+                                    {
+                                        found = false;
+                                    }
+                                }
+                            }
+
+                            int count4 = 0;
+                            List<string> numbers = new List<string>();
+                            foreach (string str in words)
+                            {
+                                if (str.Length > 0 && str[0] == '#')
+                                {
+                                    numbers.Add(str);
+                                    count4++;
+                                }
+                            }
+
+                            string cardnumber = "";
+                            if (count4 == 1)
+                            {
+                                cardnumber = numbers[0];
+                            }
+                            else if (count4 > 1)
+                            {
+                                cardnumber = "Ambiguous";
+                            }
+                            else
+                            {
+                                cardnumber = "Not Found";
+                            }
+
                             //MessageBox.Show((DateTime.Now - s).TotalSeconds.ToString());
 
                             count32++;
@@ -199,10 +259,24 @@ namespace Sold_Items_Spreadsheet_Generator
                             if (found)
                             {
                                 result.Player = player;
-                                result.SoldPrice = decimal.Parse(((XmlElement)doc.GetElementsByTagName("sellingStatus")[0]).GetElementsByTagName("currentPrice")[0].InnerText);
+                                result.Price = (((XmlElement)doc.GetElementsByTagName("sellingStatus")[0]).GetElementsByTagName("currentPrice")[0].InnerText);
                                 result.Year = year;
-                                result.Set = set;
+                                result.Brand = set;
+                                result.PSAGrade = grade.ToString();
+                                result.CardNumber = cardnumber;
+
+                                try
+                                {
+                                    result.Seller = ((XmlElement)doc.GetElementsByTagName("sellerInfo")[0]).GetElementsByTagName("sellerUserName")[0].InnerText;
+                                }
+                                catch
+                                {
+                                    result.Seller = "Unavailable";
+                                }
+
                                 total++;
+
+                                //year, brand, num, player, grade, seller, price
 
                                 groupResults.Add(result);
                                 AddedLog.Items.Add("Added " + player + ", " + total + ", " + count32);
@@ -245,9 +319,12 @@ namespace Sold_Items_Spreadsheet_Generator
                     foreach (SearchResult result in groupResults)
                     {
                         addCommand.Parameters.Add(new SqlParameter("@Year", result.Year));
+                        addCommand.Parameters.Add(new SqlParameter("@Brand", result.Brand));
+                        addCommand.Parameters.Add(new SqlParameter("@CardNumber", result.CardNumber));
                         addCommand.Parameters.Add(new SqlParameter("@Player", result.Player));
-                        addCommand.Parameters.Add(new SqlParameter("@Set", result.Set));
-                        addCommand.Parameters.Add(new SqlParameter("@SoldPrice", result.SoldPrice));
+                        addCommand.Parameters.Add(new SqlParameter("@Price", result.Price));
+                        addCommand.Parameters.Add(new SqlParameter("@PSAGrade", result.PSAGrade));
+                        addCommand.Parameters.Add(new SqlParameter("@Seller", result.Seller));
                         addCommand.Parameters.Add(new SqlParameter("@ListingID", listingId));
                         listingId++;
 
@@ -258,7 +335,7 @@ namespace Sold_Items_Spreadsheet_Generator
                         {
                             adapter2.Fill(table2);
                         }
-                        catch
+                        catch (Exception ex)
                         {
                             attempts++;
                             Debug.WriteLine(succeeded1 + " / " + attempts + " / " + (attempts - succeeded1) + " / " + groupResults.Count);
