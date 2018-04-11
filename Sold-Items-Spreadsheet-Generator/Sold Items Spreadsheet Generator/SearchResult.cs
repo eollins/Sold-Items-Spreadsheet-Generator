@@ -26,5 +26,6 @@ namespace Sold_Items_Spreadsheet_Generator
         public string PSAGrade { get; set; }
         public string Seller { get; set; }
         public string Price { get; set; }
+        public string ImageURL { get; set; }
     }
 }
